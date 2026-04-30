@@ -1,0 +1,14 @@
+{
+  "name": "face-detection-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for real-time face detection system",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ./public",
+    "dev": "npx serve -l 3000 ./public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

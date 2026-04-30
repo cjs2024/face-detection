@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  face-detection:
+    build: .
+    container_name: face-detection-system
+    ports:
+      - "80:80"
+    volumes:
+      - ./model:/app/model
+      - face_db_data:/app/face_db
+    environment:
+      - FLASK_DEBUG=0
+    restart: unless-stopped
+
+volumes:
+  face_db_data:

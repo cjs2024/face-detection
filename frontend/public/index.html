@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时人脸识别系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <div class="input-modal" id="inputModal">
+        <div class="input-modal-content">
+            <h3 id="inputModalTitle">输入</h3>
+            <input type="text" id="inputModalField" placeholder="请输入">
+            <div class="input-modal-actions">
+                <button class="info-btn" onclick="closeInputModal()">取消</button>
+                <button class="start-btn" id="inputModalConfirm">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="face-preview-tooltip" id="facePreviewTooltip">
+        <div class="face-preview-tooltip-card">
+            <img id="facePreviewImg" src="" alt="人脸预览">
+            <div class="face-preview-tooltip-name" id="facePreviewName"></div>
+        </div>
+    </div>
+    
+    <div class="source-select-modal" id="sourceSelectModal">
+        <div class="source-select-content">
+            <h3 id="sourceSelectTitle">选择来源</h3>
+            <p id="sourceSelectDesc">检测到多个可用的人脸来源，请选择：</p>
+            <div class="source-select-actions">
+                <button class="start-btn" id="sourceSelectCamera">&#128247; 摄像头画面</button>
+                <button class="upload-btn" id="sourceSelectUpload">&#128444; 上传图片</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1>实时人脸识别系统</h1>
+        
+        <div class="control-panel">
+            <div class="button-group">
+                <span class="button-group-label">检测</span>
+                <button class="start-btn" onclick="startCamera()" id="startBtn">&#9654; 开始检测</button>
+                <button class="stop-btn" onclick="stopCamera()" id="stopBtn" disabled>&#9632; 停止检测</button>
+            </div>
+            <div class="button-group">
+                <span class="button-group-label">上传</span>
+                <button class="upload-btn" onclick="document.getElementById('imageUpload').click()">&#128444; 上传图片</button>
+                <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+            </div>
+            <div class="button-group">
+                <span class="button-group-label">比对</span>
+                <button class="compare-btn" onclick="compareFaces()">&#9878; 人脸比对</button>
+            </div>
+            <div class="button-group">
+                <span class="button-group-label">人脸库</span>
+                <button class="add-btn" onclick="showAddFaceModal()">&#10010; 添加人脸</button>
+                <button class="search-btn" onclick="onSearchFaceClick()">&#128269; 搜索人脸</button>
+                <button class="list-btn" onclick="listFaces()">&#128196; 查看列表</button>
+                <button class="delete-btn" onclick="showDeleteFaceModal()">&#128465; 删除人脸</button>
+            </div>
+            <div class="button-group">
+                <span class="button-group-label">系统</span>
+                <button class="test-btn" onclick="testConnection()">&#128274; 测试连接</button>
+                <button class="info-btn" onclick="showSystemInfo()">&#8505; 系统信息</button>
+            </div>
+        </div>
+        
+        <div class="status stopped" id="status">系统已停止</div>
+        
+        <div class="video-container">
+            <div class="video-section">
+                <h3 class="video-title">实时摄像头画面</h3>
+                <div class="video-content" id="cameraVideoWrapper">
+                    <video id="cameraVideo" autoplay playsinline muted></video>
+                    <div class="camera-error-overlay" id="cameraErrorOverlay" style="display:none;">
+                        <div class="camera-error-icon">&#128247;</div>
+                        <div class="camera-error-text">无法连接摄像头</div>
+                        <div class="camera-error-hint" id="cameraErrorHint">请允许浏览器访问摄像头后重试</div>
+                    </div>
+                </div>
+            </div>
+            <div class="video-section">
+                <h3 class="video-title">上传图片</h3>
+                <div class="video-content" id="uploadAreaWrapper">
+                    <div class="upload-placeholder" id="uploadPlaceholder" onclick="document.getElementById('imageUpload').click()">
+                        <div class="upload-placeholder-icon">&#128444;</div>
+                        <div class="upload-placeholder-text">点击或拖拽上传图片</div>
+                        <div class="upload-placeholder-hint">支持 JPG / PNG 格式</div>
+                    </div>
+                    <img id="uploadedImage" alt="上传的图片" style="display:none;">
+                    <button class="remove-image-btn" id="removeImageBtn" style="display:none;" onclick="removeUploadedImage()">&#10005; 移除图片</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-card card-green">
+                <div class="info-card-header">
+                    <span class="info-card-dot green"></span>
+                    <h3>最新检测详情</h3>
+                </div>
+                <div class="info-card-body" id="detectionInfo">
+                    <div class="card-placeholder">
+                        <div class="placeholder-icon">&#128269;</div>
+                        <div class="placeholder-text">点击"开始检测"使用摄像头</div>
+                    </div>
+                </div>
+            </div>
+            <div class="info-card card-amber">
+                <div class="info-card-header">
+                    <span class="info-card-dot amber"></span>
+                    <h3>比对结果</h3>
+                </div>
+                <div class="info-card-body" id="similarityContainer" style="display:none;">
+                    <div class="similarity-bar-wrapper">
+                        <div class="similarity-progress" id="similarityProgress" style="width: 0%"></div>
+                    </div>
+                    <div class="similarity-text" id="similarityText">相似度: 0%</div>
+                    <div style="text-align:center;"><span class="similarity-badge" id="similarityBadge" style="display:none;"></span></div>
+                </div>
+                <div class="info-card-body card-placeholder" id="similarityPlaceholder">
+                    <div class="placeholder-icon">&#9878;</div>
+                    <div class="placeholder-text">暂无比对结果</div>
+                </div>
+            </div>
+            <div class="info-card card-blue">
+                <div class="info-card-header">
+                    <span class="info-card-dot blue"></span>
+                    <h3>搜索结果</h3>
+                </div>
+                <div class="info-card-body scroll-card-body" id="searchResultsContainer" style="display:none;">
+                    <div class="scroll-wrapper">
+                        <button class="scroll-arrow scroll-left" onclick="scrollContainer('searchResultsScroll', -1)">&#8249;</button>
+                        <div class="scroll-track" id="searchResultsScroll">
+                            <div class="search-results" id="searchResults"></div>
+                        </div>
+                        <button class="scroll-arrow scroll-right" onclick="scrollContainer('searchResultsScroll', 1)">&#8250;</button>
+                    </div>
+                </div>
+                <div class="info-card-body card-placeholder" id="searchPlaceholder">
+                    <div class="placeholder-icon">&#128270;</div>
+                    <div class="placeholder-text">暂无搜索结果</div>
+                </div>
+            </div>
+            <div class="info-card card-purple">
+                <div class="info-card-header">
+                    <span class="info-card-dot purple"></span>
+                    <h3>人脸库</h3>
+                </div>
+                <div class="info-card-body scroll-card-body" id="faceListContainer" style="display:none;">
+                    <div class="scroll-wrapper">
+                        <button class="scroll-arrow scroll-left" onclick="scrollContainer('faceListScroll', -1)">&#8249;</button>
+                        <div class="scroll-track" id="faceListScroll">
+                            <div class="face-list" id="faceList"></div>
+                        </div>
+                        <button class="scroll-arrow scroll-right" onclick="scrollContainer('faceListScroll', 1)">&#8250;</button>
+                    </div>
+                </div>
+                <div class="info-card-body card-placeholder" id="facePlaceholder">
+                    <div class="placeholder-icon">&#128100;</div>
+                    <div class="placeholder-text">人脸库为空</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-and-env-row">
+            <div class="detection-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalFaces">0</div>
+                    <div class="stat-label">累计检测</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="currentConfidence">-</div>
+                    <div class="stat-label">最高置信度</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="fpsValue">-</div>
+                    <div class="stat-label">处理速度</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statusText">停止</div>
+                    <div class="stat-label">当前状态</div>
+                </div>
+            </div>
+            <div class="env-compact">
+                <div class="env-item"><span class="env-label">目录</span><span class="env-val" id="dirPath">-</span></div>
+                <div class="env-item"><span class="env-label">Python</span><span class="env-val" id="pyVersion">-</span></div>
+                <div class="env-item"><span class="env-label">TF</span><span class="env-val" id="tfVersion">-</span></div>
+                <div class="env-item"><span class="env-label">模型</span><span class="env-val" id="modelStatus">-</span></div>
+            </div>
+        </div>
+        
+        <div class="log-panel" id="logPanel">
+            系统日志：<br>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

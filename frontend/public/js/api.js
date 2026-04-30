@@ -11,11 +11,11 @@ function getApiBaseUrl() {
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
                 _apiBaseUrl = 'http://localhost:10000/api';
             } else {
-                _apiBaseUrl = 'https://face-detection-api.onrender.com/api';
+                _apiBaseUrl = 'https://cjs224044-face-api.hf.space/api';
             }
         }
     } else {
-        _apiBaseUrl = 'https://face-detection-api.onrender.com/api';
+        _apiBaseUrl = 'https://cjs224044-face-api.hf.space/api';
     }
     return _apiBaseUrl;
 }

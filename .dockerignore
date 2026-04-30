@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+.git
+.gitignore
+*.md
+Dockerfile
+docker-compose.yml
+nginx.conf
+start.sh
+entrypoint.sh
+DEPLOY.md
+model/
+!model/**
+face_db/
+venv/
+*.mp4
+*.avi

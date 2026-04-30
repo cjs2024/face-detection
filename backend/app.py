@@ -26,7 +26,14 @@ last_detection_result = None
 
 class FaceDetector:
     def __init__(self):
-        self.model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'model', 'frozen_inference_graph_face.pb')
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.model_path = os.path.join(base_dir, '..', 'model', 'frozen_inference_graph_face.pb')
+        if not os.path.exists(self.model_path):
+            alt_path = os.path.join(base_dir, 'model', 'frozen_inference_graph_face.pb')
+            if os.path.exists(alt_path):
+                self.model_path = alt_path
+            else:
+                logger.warning(f"Model not found at {self.model_path} or {alt_path}")
         self.num_classes = 1
         self.detection_threshold = 0.2  # 降低阈值以提高敏感度
         
@@ -413,7 +420,8 @@ def list_faces():
 class FaceRecognition:
     """人脸比对和搜索功能类"""
     def __init__(self):
-        self.face_db_path = "../face_db"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.face_db_path = os.path.join(base_dir, '..', 'face_db')
         os.makedirs(self.face_db_path, exist_ok=True)
         self.similarity_threshold = 0.25
         self.face_size = 128
@@ -927,8 +935,8 @@ if __name__ == '__main__':
     logger.info("   • 解决跨域问题")
     logger.info("="*70)
     
-    os.makedirs('media', exist_ok=True)
+    os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media'), exist_ok=True)
     
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 7860))
     app.run(debug=debug_mode, host='0.0.0.0', port=port)

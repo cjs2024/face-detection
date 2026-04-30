@@ -1,0 +1,17 @@
+# Render Blueprint - 后端 API 服务
+# 使用方法: https://dashboard.render.com/blueprints
+
+services:
+  - type: web
+    name: face-detection-api
+    region: singapore
+    plan: free
+    pythonVersion: "3.10"
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python app.py
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: "3.10"

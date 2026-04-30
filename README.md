@@ -1,3 +1,13 @@
+---
+title: Face Detection API
+emoji: 🔥
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Tensorflow Face Detector
 A mobilenet SSD(single shot multibox detector) based face detector with pretrained model provided, powered by tensorflow [object detection api](https://github.com/tensorflow/models/tree/master/research/object_detection), trained by [WIDERFACE dataset](http://shuoyang1213.me/WIDERFACE/).
 

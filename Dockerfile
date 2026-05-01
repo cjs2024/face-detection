@@ -3,8 +3,6 @@ FROM python:3.10-slim
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PORT=7860
-ENV TF_CPP_MIN_LOG_LEVEL=2
-ENV MALLOC_ARENA_MAX=2
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
@@ -13,7 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 1000 appuser
@@ -24,8 +21,8 @@ COPY backend/requirements.txt ./backend/requirements.txt
 RUN pip install --no-cache-dir -r ./backend/requirements.txt
 
 COPY backend/app.py ./backend/app.py
-COPY protos/ ./protos/
-COPY model/ ./model/
+COPY model/deploy.prototxt ./model/deploy.prototxt
+COPY model/res10_300x300_ssd_iter_140000.caffemodel ./model/res10_300x300_ssd_iter_140000.caffemodel
 
 RUN mkdir -p ./face_db && chown -R appuser:appuser /app
 

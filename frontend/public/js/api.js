@@ -9,7 +9,7 @@ function getApiBaseUrl() {
         } else {
             var hostname = window.location.hostname;
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                _apiBaseUrl = 'http://localhost:10000/api';
+                _apiBaseUrl = 'http://localhost:7860/api';
             } else {
                 _apiBaseUrl = 'https://cjs224044-face-api.hf.space/api';
             }

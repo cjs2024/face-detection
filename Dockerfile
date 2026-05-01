@@ -3,6 +3,7 @@ FROM python:3.10-slim
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PORT=7860
+ENV TF_CPP_MIN_LOG_LEVEL=2
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
@@ -11,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -u 1000 appuser

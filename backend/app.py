@@ -30,18 +30,17 @@ class FaceDetector:
             alt_path = os.path.join(base_dir, 'model', 'frozen_inference_graph_face.pb')
             if os.path.exists(alt_path):
                 self.model_path = alt_path
-            else:
-                logger.warning(f"Model not found at {self.model_path} or {alt_path}")
         self.num_classes = 1
-        self.detection_threshold = 0.2  # 降低阈值以提高敏感度
-        
-        # 🔥 防抖参数
+        self.detection_threshold = 0.2
         self.previous_boxes = None
-        self.stability_factor = 0.3  # 平滑系数
-        self.iou_threshold = 0.7     # 匹配阈值
-        
-        # 尝试加载模型
-        self.load_model()
+        self.stability_factor = 0.3
+        self.iou_threshold = 0.7
+        self.graph = None
+        self.model_loaded = False
+        if os.path.exists(self.model_path):
+            self.load_model()
+        else:
+            logger.warning(f"Model not found at {self.model_path}, API will return errors")
 
     def load_model(self):
         try:

@@ -2,19 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 const publicDir = path.join(__dirname, 'public');
-if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-}
 
-const jsDir = path.join(publicDir, 'js');
-if (!fs.existsSync(jsDir)) {
-    fs.mkdirSync(jsDir, { recursive: true });
-}
-
-const cssDir = path.join(publicDir, 'css');
-if (!fs.existsSync(cssDir)) {
-    fs.mkdirSync(cssDir, { recursive: true });
-}
+console.log('Build started...');
+console.log('Public dir:', publicDir);
 
 const files = [
     'index.html',
@@ -24,11 +14,12 @@ const files = [
 ];
 
 files.forEach(file => {
-    const src = path.join(__dirname, file);
+    const src = path.join(publicDir, file);
     const dest = path.join(publicDir, file);
     if (fs.existsSync(src)) {
-        fs.copyFileSync(src, dest);
-        console.log(`Copied: ${file}`);
+        console.log(`OK: ${file} (${fs.statSync(src).size} bytes)`);
+    } else {
+        console.log(`MISSING: ${file}`);
     }
 });
 

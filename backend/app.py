@@ -20,8 +20,6 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 64 * 1024 * 1024
 CORS(app)
 
-# 全局检测器实例
-detector = FaceDetector()
 last_detection_result = None
 
 class FaceDetector:

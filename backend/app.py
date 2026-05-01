@@ -8,8 +8,6 @@ import time
 import logging
 import json
 from datetime import datetime
-import tensorflow as tf
-from urllib.parse import unquote
 from collections import deque
 
 # 设置日志
@@ -25,78 +23,62 @@ last_detection_result = None
 class FaceDetector:
     def __init__(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.model_path = os.path.join(base_dir, '..', 'model', 'frozen_inference_graph_face.pb')
-        if not os.path.exists(self.model_path):
-            alt_path = os.path.join(base_dir, 'model', 'frozen_inference_graph_face.pb')
-            if os.path.exists(alt_path):
-                self.model_path = alt_path
-        self.num_classes = 1
+        self.model_dir = os.path.join(base_dir, '..', 'model')
+        if not os.path.exists(self.model_dir):
+            self.model_dir = os.path.join(base_dir, 'model')
         self.detection_threshold = 0.2
         self.previous_boxes = None
         self.stability_factor = 0.3
         self.iou_threshold = 0.7
-        self.graph = None
+        self.net = None
         self.model_loaded = False
-        if os.path.exists(self.model_path):
-            self.load_model()
-        else:
-            logger.warning(f"Model not found at {self.model_path}, API will return errors")
+        self.load_model()
 
     def load_model(self):
         try:
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
+            prototxt = os.path.join(self.model_dir, 'deploy.prototxt')
+            caffemodel = os.path.join(self.model_dir, 'res10_300x300_ssd_iter_140000.caffemodel')
             
-            logger.info("使用 TensorFlow v1 加载模型...")
-            self.graph = tf.Graph()
-            with self.graph.as_default():
-                od_graph_def = tf.GraphDef()
-                with tf.gfile.GFile(self.model_path, 'rb') as fid:
-                    serialized_graph = fid.read()
-                    od_graph_def.ParseFromString(serialized_graph)
-                    tf.import_graph_def(od_graph_def, name='')
-                
-                self.sess = tf.Session(graph=self.graph)
-                
-                self.image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
-                self.detection_boxes = self.graph.get_tensor_by_name('detection_boxes:0')
-                self.detection_scores = self.graph.get_tensor_by_name('detection_scores:0')
-                self.detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
-                self.num_detections = self.graph.get_tensor_by_name('num_detections:0')
-                
-            logger.info("✅ 模型加载成功")
-            self.use_simulation = False
+            if os.path.exists(prototxt) and os.path.exists(caffemodel):
+                self.net = cv2.dnn.readNetFromCaffe(prototxt, caffemodel)
+                logger.info("OpenCV DNN model loaded successfully")
+                self.model_loaded = True
+            else:
+                logger.warning(f"Caffe model not found: {prototxt}, {caffemodel}")
+                self.model_loaded = False
         except Exception as e:
-            logger.error(f"模型加载失败: {e}")
-            self.use_simulation = True
-            logger.warning("⚠️ 使用模拟模式（无模型）")
+            logger.error(f"Model loading failed: {e}")
+            self.model_loaded = False
 
     def detect_faces(self, image):
-        if self.use_simulation:
-            # 模拟检测
+        if not self.model_loaded or self.net is None:
             h, w = image.shape[:2]
-            num_faces = np.random.randint(0, 2)  # 0-1 个脸
-            boxes = []
-            scores = []
-            for _ in range(num_faces):
-                x1 = np.random.randint(0, w//2)
-                y1 = np.random.randint(0, h//2)
-                size = np.random.randint(min(w,h)//8, min(w,h)//3)
-                x2, y2 = min(x1 + size, w), min(y1 + size, h)
-                boxes.append([y1/h, x1/w, y2/h, x2/w])
-                scores.append(np.random.uniform(0.4, 0.95))
-            return np.array(boxes), np.array(scores), np.array([1]*len(boxes)), len(boxes)
+            return np.array([]), np.array([]), np.array([]), 0
         
         try:
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            image_expanded = np.expand_dims(image_rgb, axis=0)
-            (boxes, scores, classes, num) = self.sess.run(
-                [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-                feed_dict={self.image_tensor: image_expanded}
-            )
-            return boxes[0], scores[0], classes[0], int(num[0])
+            h, w = image.shape[:2]
+            blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+            self.net.setInput(blob)
+            detections = self.net.forward()
+            
+            boxes = []
+            scores = []
+            classes = []
+            
+            for i in range(detections.shape[2]):
+                confidence = detections[0, 0, i, 2]
+                if confidence > self.detection_threshold:
+                    box = detections[0, 0, i, 3:7]
+                    boxes.append(box.tolist())
+                    scores.append(float(confidence))
+                    classes.append(1)
+            
+            if len(boxes) > 0:
+                return np.array(boxes), np.array(scores), np.array(classes), len(boxes)
+            else:
+                return np.array([]), np.array([]), np.array([]), 0
         except Exception as e:
-            logger.error(f"检测失败: {e}")
+            logger.error(f"Detection failed: {e}")
             return np.array([]), np.array([]), np.array([]), 0
 
     def calculate_iou(self, box1, box2):
